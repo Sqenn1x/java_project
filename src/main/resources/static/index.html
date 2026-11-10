@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira - Tarkvara arendusmeetodid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+
+<body>
+
+    <!-- ================= Auth screen ================= -->
+    <div class="auth hidden" id="authScreen">
+        <div class="auth-art">
+            <div class="blob b1"></div>
+            <div class="blob b2"></div>
+            <div class="blob b3"></div>
+            <div class="float-card f1">
+                <div class="fc-key">TA-12</div>
+                <div class="fc-title">Дизайн главной страницы</div><span class="fc-pill" style="background:rgba(59,91,255,.35)">В работе</span></div>
+            <div class="float-card f2">
+                <div class="fc-key">TA-7</div>
+                <div class="fc-title">Подключить базу данных</div><span class="fc-pill" style="background:rgba(16,185,129,.35)">Готово</span></div>
+            <div class="float-card f3">
+                <div class="fc-key">TA-15</div>
+                <div class="fc-title">Ревью API</div><span class="fc-pill" style="background:rgba(139,92,246,.4)">На ревью</span></div>
+            <h2>Вся работа над проектом на одной доске</h2>
+            <p>Двигайте задачи между колонками, планируйте сроки на таймлайне и управляйте доской обычными словами через ИИ.</p>
+        </div>
+
+        <div class="auth-panel">
+            <div class="auth-card" id="authCard">
+                <div class="auth-logo"><i class="fa-solid fa-square-poll-vertical"></i> Jira Lite</div>
+                <div>
+                    <h1 id="authTitle">С возвращением</h1>
+                </div>
+                <p class="auth-sub" id="authSub">Войдите по email, чтобы открыть свои задачи.</p>
+
+                <div class="seg">
+                    <div class="seg-thumb"></div>
+                    <button type="button" class="on" id="segLogin" onclick="setAuthMode('login')">Вход</button>
+                    <button type="button" id="segRegister" onclick="setAuthMode('register')">Регистрация</button>
+                </div>
+
+                <form class="auth-form" onsubmit="event.preventDefault(); submitAuth();">
+                    <div class="collapse">
+                        <div>
+                            <div class="field">
+                                <label for="auth-username">Никнейм</label>
+                                <input type="text" id="auth-username" placeholder="Denis" autocomplete="username" maxlength="40">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="auth-email">Email</label>
+                        <input type="email" id="auth-email" placeholder="denis@example.com" autocomplete="email">
+                    </div>
+                    <div class="form-error" id="authError" role="alert"></div>
+                    <button type="submit" class="btn btn-primary" id="authSubmit" style="padding:12px 14px;">Войти</button>
+                </form>
+                <p class="auth-note">Пароль не нужен: аккаунт определяется по email.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Header ================= -->
+    <header>
+        <div class="header-left">
+            <div class="logo" onclick="switchPage('board')"><i class="fa-solid fa-square-poll-vertical"></i> Jira</div>
+            <div class="search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Поиск задач..." id="searchInput" oninput="onSearchInput(this)">
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openTaskModal()"><i class="fa-solid fa-plus"></i> <span class="label-hide">Создать</span></button>
+            <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Сменить тему"><i class="fa-solid fa-moon"></i></button>
+            <div class="profile">
+                <button class="icon-btn" id="prefsBtn" onclick="togglePreferences(event)" title="Настройки интерфейса" aria-label="Настройки интерфейса"><i class="fa-solid fa-sliders"></i></button>
+                <div class="menu prefs-menu" id="prefsMenu" onclick="event.stopPropagation()">
+                    <div class="menu-info" data-i18n="preferences">Настройки интерфейса</div>
+                    <label class="prefs-field" for="localeSelect">
+                        <span data-i18n="language">Язык</span>
+                        <select class="prefs-select" id="localeSelect" onchange="setLocale(this.value)">
+                            <option value="ru">Русский</option>
+                            <option value="en">English</option>
+                        </select>
+                    </label>
+                    <label class="prefs-check">
+                        <input type="checkbox" id="compactToggle" onchange="setCompactMode(this.checked)">
+                        <span data-i18n="compactMode">Компактный режим</span>
+                    </label>
+                    <button class="menu-item" type="button" onclick="exportTasks()"><i class="fa-solid fa-download"></i> <span data-i18n="exportCsv">Экспортировать задачи</span></button>
+                    <div class="prefs-hint" data-i18n="shortcuts">/ поиск · N новая задача · Esc закрыть</div>
+                </div>
+            </div>
+            <div class="profile">
+                <div class="avatar" id="avatar" onclick="toggleProfileMenu(event)">?</div>
+                <div class="menu" id="profileMenu" onclick="event.stopPropagation()">
+                    <div class="menu-info">
+                        <div class="menu-name" id="menu-username">-</div>
+                        <div class="menu-email" id="menu-email">-</div>
+                    </div>
+                    <button class="menu-item" onclick="changeUsername()"><i class="fa-solid fa-pen"></i> Сменить ник</button>
+                    <button class="menu-item danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Выйти</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app">
+        <!-- ================= Sidebar ================= -->
+        <aside>
+            <div class="side-title">Мои пространства</div>
+            <div class="board-list" id="boardsList"></div>
+            <button class="side-link" type="button" onclick="openBoardModal()"><i class="fa-solid fa-square-plus"></i> Новое пространство</button>
+            <div class="development-space-navigation" id="developmentSpaceNavigation">
+                <div class="side-title">Development requests</div>
+                <button class="side-link active" type="button" data-work-filter="ALL" onclick="setDevelopmentWorkFilter('ALL')"><i class="fa-regular fa-circle-dot"></i> Вся работа</button>
+                <button class="side-link" type="button" onclick="switchPage('summary')"><i class="fa-solid fa-chart-pie"></i> Сводка</button>
+                <button class="side-link" type="button" data-work-filter="TODO" onclick="setDevelopmentWorkFilter('TODO')"><i class="fa-solid fa-inbox"></i> Очередь</button>
+                <button class="side-link" type="button" data-work-type="TASK" onclick="setDevelopmentWorkType('TASK')"><i class="fa-regular fa-paper-plane"></i> Запросы</button>
+                <button class="side-link" type="button" data-work-type="BUG" onclick="setDevelopmentWorkType('BUG')"><i class="fa-solid fa-triangle-exclamation"></i> Инциденты</button>
+                <button class="side-link" type="button" onclick="switchPage('summary')"><i class="fa-solid fa-chart-column"></i> Отчёты</button>
+                <button class="side-link" type="button" onclick="switchPage('docs')"><i class="fa-regular fa-lightbulb"></i> База знаний</button>
+            </div>
+            <div id="commonSidebarLinks">
+                <div class="side-title">Для вас</div>
+                <a class="side-link" data-page="summary" onclick="switchPage('summary')"><i class="fa-solid fa-user-check"></i> Назначено мне</a>
+                <a class="side-link" onclick="switchPage('summary')"><i class="fa-solid fa-clock-rotate-left"></i> Недавняя активность</a>
+
+                <div class="side-title">Инструменты</div>
+                <a class="side-link" data-page="docs" onclick="switchPage('docs')"><i class="fa-solid fa-book"></i> Документация</a>
+                <a class="side-link" data-page="development" onclick="switchPage('development')"><i class="fa-solid fa-code-branch"></i> Git-репозиторий</a>
+            </div>
+        </aside>
+
+        <!-- ================= Workspace ================= -->
+        <div class="workspace">
+            <div class="project-head">
+                <div class="project-title-row">
+                    <div class="project-title">
+                        <div class="proj-icon" id="boardIcon">T</div>
+                        <select class="board-select" id="boardSelect" aria-label="Выбрать доску" onchange="selectBoard(this.value)"></select>
+                        <span class="space-template-badge" id="spaceTemplateBadge"></span>
+                        <button class="btn btn-outline board-create-button" type="button" onclick="openBoardModal()"><i class="fa-solid fa-plus"></i> Новое пространство</button>
+                    </div>
+                    <div class="space-actions" aria-label="Действия пространства">
+                        <button class="board-icon-action" type="button" onclick="shareCurrentBoard()" title="Поделиться пространством" aria-label="Поделиться пространством"><i class="fa-solid fa-share-nodes"></i></button>
+                        <div class="automation-control">
+                            <button class="board-icon-action" id="automationButton" type="button" onclick="toggleAutomationPopover(event)" title="Автоматизация" aria-label="Автоматизация" aria-expanded="false" aria-controls="automationPopover"><i class="fa-solid fa-bolt"></i></button>
+                            <section class="automation-popover" id="automationPopover" aria-label="Автоматизация" hidden>
+                                <div class="automation-popover-title">Автоматизация</div>
+                                <div class="automation-illustration" aria-hidden="true">
+                                    <div class="automation-illustration-column"><span></span><span></span></div>
+                                    <div class="automation-illustration-column"><span></span><span></span></div>
+                                    <div class="automation-illustration-column"><span></span><span></span></div>
+                                </div>
+                                <p class="automation-explainer">Создавайте правила, которые автоматически выполняют действия с задачами при смене статуса.</p>
+                                <div class="automation-menu-items">
+                                    <button type="button" onclick="openAutomationCreate()"><i class="fa-solid fa-plus"></i><span>Создать автоматизацию</span></button>
+                                    <button type="button" onclick="openAutomationManage()"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>Управление автоматизациями</span></button>
+                                    <button type="button" onclick="openAutomationAudit()"><i class="fa-regular fa-circle-check"></i><span>Журнал аудита</span></button>
+                                </div>
+                                <div class="automation-ai-card">
+                                    <strong><i class="fa-solid fa-wand-magic-sparkles"></i> Автоматизации с помощью ИИ</strong>
+                                    <p>Опишите задачу ассистенту, чтобы получить помощь с управлением проектом.</p>
+                                    <button class="space-template-change" type="button" onclick="closeAutomationPopover(); toggleAiChat(true)">Спросить ИИ</button>
+                                </div>
+                            </section>
+                        </div>
+                        <button class="board-icon-action" type="button" onclick="toggleAiChat(true)" title="Открыть ИИ-чат" aria-label="Открыть ИИ-чат"><i class="fa-regular fa-comment-dots"></i></button>
+                        <button class="board-icon-action" id="boardFullscreenButton" type="button" onclick="toggleBoardFullscreen()" title="Развернуть доску" aria-label="Развернуть доску"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                    </div>
+                </div>
+                <div class="tabs" id="tabs">
+                    <button class="tab" data-tab="summary" onclick="switchPage('summary')"><i class="fa-solid fa-chart-pie"></i> Сводка</button>
+                    <button class="tab" data-tab="list" onclick="switchPage('list')"><i class="fa-solid fa-list"></i> Список</button>
+                    <button class="tab active" data-tab="board" onclick="switchPage('board')"><i class="fa-solid fa-table-columns"></i> Доска</button>
+                    <button class="tab" data-tab="backlog" onclick="switchPage('backlog')"><i class="fa-solid fa-list-check"></i> Backlog и спринты</button>
+                    <button class="tab" data-tab="timeline" onclick="switchPage('timeline')"><i class="fa-solid fa-timeline"></i> Таймлайн</button>
+                    <button class="tab" data-tab="development" onclick="switchPage('development')"><i class="fa-solid fa-code"></i> Разработка</button>
+                    <button class="tab" data-tab="forms" onclick="switchPage('forms')"><i class="fa-solid fa-clipboard-list"></i> Формы</button>
+                    <button class="tab" data-tab="docs" onclick="switchPage('docs')"><i class="fa-solid fa-file-lines"></i> Документы</button>
+                    <span class="tab-indicator" id="tabIndicator"></span>
+                </div>
+            </div>
+
+            <!-- BOARD -->
+            <div class="page active" id="page-board">
+                <div class="toolbar">
+                    <input type="text" class="chip-search" placeholder="Поиск по доске..." id="boardSearchInput" oninput="onSearchInput(this)">
+                    <button class="chip active" data-status="ALL" onclick="filterByStatus('ALL')"><i class="fa-solid fa-layer-group"></i> Все</button>
+                    <button class="chip" data-status="TODO" onclick="filterByStatus('TODO')">К выполнению</button>
+                    <button class="chip" data-status="IN_PROGRESS" onclick="filterByStatus('IN_PROGRESS')">В работе</button>
+                    <button class="chip" data-status="IN_REVIEW" onclick="filterByStatus('IN_REVIEW')">На ревью</button>
+                    <button class="chip" data-status="DONE" onclick="filterByStatus('DONE')">Готово</button>
+                    <span class="toolbar-spacer"></span>
+                    <div class="board-toolbar-actions" aria-label="Инструменты доски">
+                        <button class="board-icon-action" type="button" onclick="switchPage('summary')" title="Отчёты" aria-label="Отчёты"><i class="fa-solid fa-chart-line"></i></button>
+                        <button class="board-icon-action" id="boardDensityButton" type="button" onclick="toggleBoardDensity()" title="Компактный режим" aria-label="Компактный режим" aria-pressed="false"><i class="fa-solid fa-sliders"></i></button>
+                        <div class="board-action-menu-wrap">
+                            <button class="board-icon-action" id="boardMoreButton" type="button" onclick="toggleBoardActionMenu(event)" title="Дополнительные действия" aria-label="Дополнительные действия" aria-expanded="false" aria-controls="boardActionMenu"><i class="fa-solid fa-ellipsis"></i></button>
+                            <div class="board-action-menu" id="boardActionMenu" hidden>
+                                <button type="button" onclick="openTaskModal(); closeBoardActionMenu()"><i class="fa-solid fa-plus"></i><span>Создать задачу</span></button>
+                                <button type="button" onclick="exportTasks(); closeBoardActionMenu()"><i class="fa-solid fa-download"></i><span>Экспортировать задачи</span></button>
+                                <button type="button" onclick="shareCurrentBoard(); closeBoardActionMenu()"><i class="fa-solid fa-share-nodes"></i><span>Поделиться пространством</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kanban">
+                    <div class="column s-TODO" ondragover="allowDrop(event)" ondragleave="removeDropStyle(event)" ondrop="dropTask(event, 'TODO')">
+                        <div class="col-head"><span class="dot"></span> К выполнению <span class="count" id="count-TODO">0</span></div>
+                        <div class="tasks" id="col-TODO"></div>
+                        <button class="col-add" onclick="openTaskModal(null, 'TODO')"><i class="fa-solid fa-plus"></i> Создать задачу</button>
+                    </div>
+                    <div class="column s-IN_PROGRESS" ondragover="allowDrop(event)" ondragleave="removeDropStyle(event)" ondrop="dropTask(event, 'IN_PROGRESS')">
+                        <div class="col-head"><span class="dot"></span> В работе <span class="count" id="count-IN_PROGRESS">0</span></div>
+                        <div class="tasks" id="col-IN_PROGRESS"></div>
+                        <button class="col-add" onclick="openTaskModal(null, 'IN_PROGRESS')"><i class="fa-solid fa-plus"></i> Создать задачу</button>
+                    </div>
+                    <div class="column s-IN_REVIEW" ondragover="allowDrop(event)" ondragleave="removeDropStyle(event)" ondrop="dropTask(event, 'IN_REVIEW')">
+                        <div class="col-head"><span class="dot"></span> На ревью <span class="count" id="count-IN_REVIEW">0</span></div>
+                        <div class="tasks" id="col-IN_REVIEW"></div>
+                        <button class="col-add" onclick="openTaskModal(null, 'IN_REVIEW')"><i class="fa-solid fa-plus"></i> Создать задачу</button>
+                    </div>
+                    <div class="column s-DONE" ondragover="allowDrop(event)" ondragleave="removeDropStyle(event)" ondrop="dropTask(event, 'DONE')">
+                        <div class="col-head"><span class="dot"></span> Готово <span class="count" id="count-DONE">0</span></div>
+                        <div class="tasks" id="col-DONE"></div>
+                        <button class="col-add" onclick="openTaskModal(null, 'DONE')"><i class="fa-solid fa-plus"></i> Создать задачу</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BACKLOG AND SPRINTS -->
+            <div class="page" id="page-backlog">
+                <div class="toolbar">
+                    <div>
+                        <div class="page-title">Backlog и спринты</div>
+                        <p class="page-sub">Планируйте задачи и запускайте спринты. Завершённые спринты сохраняют задачи.</p>
+                    </div>
+                    <button class="btn btn-primary" type="button" onclick="openSprintModal()"><i class="fa-solid fa-plus"></i> Создать спринт</button>
+                </div>
+                <div class="backlog-sections">
+                    <section class="backlog-section">
+                        <h3>Backlog <span class="count" id="backlog-count">0</span></h3>
+                        <div id="backlog-list"></div>
+                    </section>
+                    <section class="backlog-section">
+                        <h3>Спринты</h3>
+                        <div id="sprints-list"></div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- LIST -->
+            <div class="page" id="page-list">
+                <div id="generalListView">
+                    <div class="page-title">Список задач</div>
+                    <p class="page-sub">Все задачи проекта в одной таблице. Нажмите на карандаш, чтобы изменить задачу или поставить сроки.</p>
+                    <div class="table-box">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ключ</th>
+                                    <th>Название</th>
+                                    <th>Статус</th>
+                                    <th>Начало</th>
+                                    <th>Окончание</th>
+                                    <th>Исполнитель</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="development-work-page" id="developmentWorkPage">
+                    <div class="development-work-breadcrumb"><span>Пространства</span><i class="fa-solid fa-chevron-right"></i><strong id="developmentWorkSpaceName">Development requests</strong></div>
+                    <div class="development-work-title-row">
+                        <h1>Вся работа</h1>
+                        <button class="board-icon-action" type="button" onclick="exportTasks()" title="Дополнительные действия" aria-label="Дополнительные действия"><i class="fa-solid fa-ellipsis"></i></button>
+                    </div>
+                    <div class="development-work-toolbar">
+                        <input class="development-work-search" id="developmentWorkSearch" type="search" placeholder="Поиск работы" oninput="renderDevelopmentWork(getFilteredTasks())">
+                        <button class="development-work-assignee" id="developmentWorkAssignee" type="button" aria-pressed="false" onclick="toggleDevelopmentWorkAssignee()" title="Назначено мне" aria-label="Назначено мне">D</button>
+                        <button class="development-work-button" id="developmentWorkFilterButton" type="button" aria-expanded="false" onclick="toggleDevelopmentWorkFilters()"><i class="fa-solid fa-filter"></i> Фильтр</button>
+                        <button class="development-work-button" id="developmentWorkGroupButton" type="button" aria-pressed="false" onclick="toggleDevelopmentWorkGrouping()"><i class="fa-solid fa-layer-group"></i> Группировать</button>
+                        <div class="development-work-filter-menu" id="developmentWorkFilterMenu">
+                            <label>Статус
+                                <select id="developmentWorkStatusFilter" onchange="renderDevelopmentWork(getFilteredTasks())">
+                                    <option value="ALL">Все статусы</option>
+                                    <option value="TODO">К выполнению</option>
+                                    <option value="IN_PROGRESS">В работе</option>
+                                    <option value="IN_REVIEW">На ревью</option>
+                                    <option value="DONE">Готово</option>
+                                </select>
+                            </label>
+                            <label>Тип работы
+                                <select id="developmentWorkTypeFilter" onchange="renderDevelopmentWork(getFilteredTasks())">
+                                    <option value="ALL">Все типы</option>
+                                    <option value="TASK">Задачи</option>
+                                    <option value="STORY">Истории</option>
+                                    <option value="BUG">Ошибки</option>
+                                    <option value="EPIC">Эпики</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="development-work-table-wrap">
+                        <table class="development-work-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" aria-label="Выбрать всю работу"></th>
+                                    <th>Работа</th>
+                                    <th>Владелец</th>
+                                    <th>Автор</th>
+                                    <th>Приоритет</th>
+                                    <th>Статус</th>
+                                    <th>Решение</th>
+                                    <th>Создано</th>
+                                    <th>Обновлено</th>
+                                </tr>
+                            </thead>
+                            <tbody id="developmentWorkTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="development-work-footer">
+                        <button type="button" onclick="openTaskModal()"><i class="fa-solid fa-plus"></i> Создать</button>
+                        <span id="developmentWorkCount">0</span>
+                        <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TIMELINE -->
+            <div class="page" id="page-timeline">
+                <div class="page-title">Таймлайн</div>
+                <p class="page-sub">Сроки задач по календарю. Нажмите на полосу, чтобы изменить даты, или на «Добавить даты» у задачи без сроков.</p>
+                <div class="toolbar">
+                    <button class="btn btn-outline" onclick="scrollTimelineToToday()"><i class="fa-regular fa-calendar"></i> Сегодня</button>
+                </div>
+                <div id="timeline-host"></div>
+            </div>
+
+            <!-- DEVELOPMENT -->
+            <div class="page" id="page-development">
+                <div class="page-title">Разработка и Git</div>
+                <p class="page-sub">Связанные ветки репозитория и коммиты вашего проекта.</p>
+                <div class="table-box">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ветка</th>
+                                <th>Задача</th>
+                                <th>Статус</th>
+                                <th>Последний коммит</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>feature/TA-auth-flow</code></td>
+                                <td><span class="key"><i class="fa-solid fa-bolt"></i> Auth module</span></td>
+                                <td><span class="pill s-IN_PROGRESS">В работе</span></td>
+                                <td style="color: var(--muted);">Fix login session bug</td>
+                            </tr>
+                            <tr>
+                                <td><code>bugfix/TA-gantt-chart</code></td>
+                                <td><span class="key"><i class="fa-solid fa-bolt"></i> Timeline view</span></td>
+                                <td><span class="pill s-DONE">Готово</span></td>
+                                <td style="color: var(--muted);">Add Gantt bar scaling</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FORMS -->
+            <div class="page" id="page-forms">
+                <div class="page-title">Форма отчёта об ошибке</div>
+                <p class="page-sub">Отправленная форма создаёт задачу в колонке «К выполнению».</p>
+                <div class="panel" style="max-width: 520px; display: flex; flex-direction: column; gap: 14px;">
+                    <div class="field"><label for="bug-description">Описание ошибки</label><input type="text" id="bug-description" placeholder="Что пошло не так?"></div>
+                    <div class="field"><label for="bug-steps">Шаги воспроизведения</label><textarea id="bug-steps" placeholder="1. Открыть... 2. Нажать..."></textarea></div>
+                    <button class="btn btn-primary" style="width: fit-content;" onclick="submitBugForm()">Отправить</button>
+                </div>
+            </div>
+
+            <!-- DOCS -->
+            <div class="page" id="page-docs">
+                <div class="page-title">Документация</div>
+                <div class="panel">
+                    <h3>Архитектура проекта</h3>
+                    <p class="page-sub" style="margin-bottom: 8px;">Проект построен на Spring Boot, JPA и MySQL, фронтенд на чистом JavaScript с REST API.</p>
+                    <ul>
+                        <li>Задачи привязаны к пользователю по <code>userId</code>.</li>
+                        <li>У каждого пользователя может быть несколько независимых Kanban-досок.</li>
+                        <li>Kanban-доска с перетаскиванием карточек.</li>
+                        <li>Типы и приоритеты задач, назначение владельцу доски, комментарии и вложения.</li>
+                        <li>Backlog и спринты с сохранением задач в завершённом спринте.</li>
+                        <li>Таймлайн со сроками начала и окончания задач.</li>
+                        <li>ИИ-ассистент управляет задачами текстовыми командами.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- SUMMARY -->
+            <div class="page" id="page-summary">
+                <div class="page-title">Сводка</div>
+                <p class="page-sub">Что происходит в проекте прямо сейчас.</p>
+                <div class="stats">
+                    <div class="stat"><span>Всего задач</span><strong id="stat-total">0</strong></div>
+                    <div class="stat"><span>В работе</span><strong id="stat-progress" style="color: var(--s-progress);">0</strong></div>
+                    <div class="stat"><span>Готово</span><strong id="stat-done" style="color: var(--s-done);">0</strong></div>
+                    <div class="stat"><span>Просрочено</span><strong id="stat-late" style="color: var(--danger);">0</strong></div>
+                </div>
+                <div class="panel">
+                    <h3>Распределение по статусам</h3>
+                    <div class="stack">
+                        <i class="s-TODO" id="seg-TODO"></i><i class="s-IN_PROGRESS" id="seg-IN_PROGRESS"></i><i class="s-IN_REVIEW" id="seg-IN_REVIEW"></i><i class="s-DONE" id="seg-DONE"></i>
+                    </div>
+                    <div class="legend">
+                        <span class="s-TODO"><span class="dot"></span> К выполнению</span>
+                        <span class="s-IN_PROGRESS"><span class="dot"></span> В работе</span>
+                        <span class="s-IN_REVIEW"><span class="dot"></span> На ревью</span>
+                        <span class="s-DONE"><span class="dot"></span> Готово</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-chat" id="aiChat">
+        <section class="ai-chat-panel" aria-label="Чат с ИИ">
+            <header class="ai-chat-header">
+                <div class="ai-chat-title"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Jira AI</span></div>
+                <div class="ai-chat-actions">
+                    <button class="icon-btn" type="button" onclick="clearAiHistory()" title="Очистить историю" aria-label="Очистить историю"><i class="fa-regular fa-trash-can"></i></button>
+                    <button class="icon-btn" type="button" onclick="toggleAiChat(false)" title="Закрыть чат" aria-label="Закрыть чат"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </header>
+            <div class="ai-chat-messages" id="aiMessages" role="log" aria-live="polite"></div>
+            <div class="ai-chat-footer">
+                <div class="ai-chat-form">
+                    <textarea class="ai-chat-input" id="aiPromptInput" rows="2" maxlength="1000" placeholder="Спросите или попросите изменить задачи..." onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendAiCommand(); }"></textarea>
+                    <button class="btn btn-primary" id="aiSendBtn" type="button" onclick="sendAiCommand()" aria-label="Отправить"><i class="fa-solid fa-arrow-up"></i></button>
+                </div>
+                <div class="ai-chat-hint">История сохраняется между входами. Enter — отправить · Shift+Enter — новая строка</div>
+            </div>
+        </section>
+        <button class="ai-launcher" id="aiLauncher" type="button" onclick="toggleAiChat(true)" aria-label="Открыть чат с ИИ" title="Открыть чат с ИИ">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </button>
+    </div>
+
+    <!-- ================= Modal: create / edit task ================= -->
+    <div class="backdrop" id="taskModal" onclick="if (event.target === this) closeModal('taskModal')">
+        <div class="modal">
+            <h3 id="tm-heading">Новая задача</h3>
+            <div class="field">
+                <label for="tm-title">Название</label>
+                <input type="text" id="tm-title" placeholder="Что нужно сделать?" maxlength="255" onkeydown="if (event.key === 'Enter') submitTaskModal()">
+            </div>
+            <div class="field">
+                <label for="tm-desc">Описание</label>
+                <textarea id="tm-desc" placeholder="Необязательно"></textarea>
+            </div>
+            <div class="field">
+                <label for="tm-status">Статус</label>
+                <select id="tm-status">
+                <option value="TODO">К выполнению</option>
+                <option value="IN_PROGRESS">В работе</option>
+                <option value="IN_REVIEW">На ревью</option>
+                <option value="DONE">Готово</option>
+            </select>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label for="tm-type">Тип задачи</label>
+                    <select id="tm-type">
+                        <option value="TASK">Задача</option>
+                        <option value="STORY">История</option>
+                        <option value="BUG">Ошибка</option>
+                        <option value="EPIC">Эпик</option>
+                        <option value="SUBTASK">Подзадача</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="tm-priority">Приоритет</label>
+                    <select id="tm-priority">
+                        <option value="LOW">Низкий</option>
+                        <option value="MEDIUM">Средний</option>
+                        <option value="HIGH">Высокий</option>
+                        <option value="HIGHEST">Критический</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label for="tm-assignee">Исполнитель</label>
+                    <select id="tm-assignee">
+                        <option value="">Не назначено</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="tm-sprint">Спринт</label>
+                    <select id="tm-sprint"></select>
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field"><label for="tm-start">Дата начала</label><input type="date" id="tm-start"></div>
+                <div class="field"><label for="tm-end">Дата окончания</label><input type="date" id="tm-end"></div>
+            </div>
+            <div class="task-details" id="taskDetails" hidden>
+                <div class="field">
+                    <label>Комментарии</label>
+                    <div id="comments-list"></div>
+                    <div class="inline-form">
+                        <textarea id="comment-input" rows="2" maxlength="5000" placeholder="Напишите комментарий"></textarea>
+                        <button class="btn btn-outline" type="button" onclick="submitComment()">Отправить</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Вложения (до 10 МБ)</label>
+                    <div id="attachments-list"></div>
+                    <input type="file" id="attachment-input" onchange="uploadTaskAttachment(this)">
+                </div>
+            </div>
+            <div class="form-error" id="tm-error" role="alert"></div>
+            <div class="modal-actions">
+                <button class="btn btn-danger-ghost spacer" id="tm-delete" onclick="deleteFromModal()"><i class="fa-regular fa-trash-can"></i> Удалить</button>
+                <button class="btn btn-ghost" onclick="closeModal('taskModal')">Отмена</button>
+                <button class="btn btn-primary" id="tm-submit" onclick="submitTaskModal()">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal: create sprint ================= -->
+    <div class="backdrop" id="sprintModal" onclick="if (event.target === this) closeModal('sprintModal')">
+        <div class="modal">
+            <h3>Новый спринт</h3>
+            <div class="field">
+                <label for="sprint-name">Название</label>
+                <input type="text" id="sprint-name" maxlength="100" placeholder="Например, Спринт 1">
+            </div>
+            <div class="field">
+                <label for="sprint-goal">Цель</label>
+                <textarea id="sprint-goal" maxlength="2000" placeholder="Необязательно"></textarea>
+            </div>
+            <div class="field-row">
+                <div class="field"><label for="sprint-start">Начало</label><input type="date" id="sprint-start"></div>
+                <div class="field"><label for="sprint-end">Окончание</label><input type="date" id="sprint-end"></div>
+            </div>
+            <div class="form-error" id="sprint-error" role="alert"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" type="button" onclick="closeModal('sprintModal')">Отмена</button>
+                <button class="btn btn-primary" id="sprint-submit" type="button" onclick="submitSprint()">Создать спринт</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal: create space from template ================= -->
+    <div class="backdrop space-wizard-backdrop" id="boardModal" onclick="if (event.target === this) closeModal('boardModal')">
+        <div class="modal space-modal">
+            <div class="space-wizard">
+                <section class="space-form-pane">
+                    <div class="space-form-content">
+                        <button class="space-back-link" type="button" onclick="backToBoard()"><i class="fa-solid fa-arrow-left"></i> Назад к доске</button>
+                        <div id="spaceWizardDetails">
+                            <h3 id="spaceWizardTitle">Назовите пространство</h3>
+                            <p class="space-form-subtitle" id="spaceWizardSubtitle">Обязательные поля отмечены звёздочкой <span class="space-required">*</span></p>
+                            <div class="space-fields">
+                                <div class="field">
+                                    <label for="board-name">Название <span class="space-required">*</span></label>
+                                    <input type="text" id="board-name" maxlength="80" placeholder="Например, Мобильное приложение" oninput="updateSpaceKeyFromName()" onkeydown="if (event.key === 'Enter') continueSpaceWizard()">
+                                </div>
+                                <div class="field">
+                                    <label for="space-management">Как управляется пространство</label>
+                                    <select id="space-management" onchange="updateSpacePreview()">
+                                        <option value="TEAM_MANAGED">Командное пространство</option>
+                                        <option value="PERSONAL">Личное пространство</option>
+                                    </select>
+                                </div>
+                                <p class="space-access-note" id="spaceAccessNote">Доступ: пространство доступно только вашему аккаунту.</p>
+                                <div class="field">
+                                    <label for="space-key">Ключ <span class="space-required">*</span></label>
+                                    <input type="text" id="space-key" maxlength="10" value="SPACE" oninput="onSpaceKeyInput()" onkeydown="if (event.key === 'Enter') continueSpaceWizard()">
+                                    <span class="space-key-hint">2–10 латинских букв или цифр; начинается с буквы.</span>
+                                </div>
+                                <div class="space-template-section">
+                                    <div class="space-template-heading">
+                                        <span>Шаблон</span>
+                                        <button class="space-template-change" type="button" onclick="toggleSpaceTemplatePicker()">Выбрать другой</button>
+                                    </div>
+                                    <div class="space-template-summary">
+                                        <i id="spaceTemplateIcon" class="fa-solid fa-table-columns"></i>
+                                        <div>
+                                            <strong id="spaceTemplateName">Kanban</strong>
+                                            <span id="spaceTemplateDescription">Визуализируйте работу по колонкам и перемещайте задачи по этапам.</span>
+                                        </div>
+                                    </div>
+                                    <div class="space-template-picker" id="spaceTemplatePicker">
+                                        <button class="space-template-option" type="button" data-template="PERSONAL_PLANNER" onclick="selectSpaceTemplate('PERSONAL_PLANNER')">
+                                            <i class="fa-solid fa-list-check"></i><span><strong>Personal task planner</strong><small>Личные задачи и приоритеты</small></span>
+                                        </button>
+                                        <button class="space-template-option" type="button" data-template="GENERAL_SERVICE_MANAGEMENT" onclick="selectSpaceTemplate('GENERAL_SERVICE_MANAGEMENT')">
+                                            <i class="fa-solid fa-headset"></i><span><strong>General service management</strong><small>Поддержка и обработка обращений</small></span>
+                                        </button>
+                                        <button class="space-template-option" type="button" data-template="DEVELOPMENT_REQUESTS" onclick="selectSpaceTemplate('DEVELOPMENT_REQUESTS')">
+                                            <i class="fa-solid fa-code"></i><span><strong>Development requests</strong><small>Фичи, баги и инциденты</small></span>
+                                        </button>
+                                        <button class="space-template-option" type="button" data-template="PROJECT_MANAGEMENT" onclick="selectSpaceTemplate('PROJECT_MANAGEMENT')">
+                                            <i class="fa-solid fa-diagram-project"></i><span><strong>Project management</strong><small>Планирование и выполнение проектов</small></span>
+                                        </button>
+                                        <button class="space-template-option" type="button" data-template="SCRUM" onclick="selectSpaceTemplate('SCRUM')">
+                                            <i class="fa-solid fa-layer-group"></i><span><strong>Scrum</strong><small>Backlog и спринты</small></span>
+                                        </button>
+                                        <button class="space-template-option selected" type="button" data-template="KANBAN" onclick="selectSpaceTemplate('KANBAN')">
+                                            <i class="fa-solid fa-table-columns"></i><span><strong>Kanban</strong><small>Доска с колонками</small></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-error" id="board-error" role="alert"></div>
+                        </div>
+                        <div class="space-review" id="spaceWizardReview">
+                            <h3 id="spaceWizardReviewTitle">Проверьте пространство</h3>
+                            <div class="space-review-row"><span>Название пространства</span><strong id="spaceReviewName"></strong></div>
+                            <div class="space-review-row"><span>Ключ</span><strong id="spaceReviewKey"></strong></div>
+                            <div class="space-review-row"><span>Управление</span><strong id="spaceReviewManagement"></strong></div>
+                            <div class="space-review-row"><span>Шаблон</span><strong id="spaceReviewTemplate"></strong></div>
+                            <p class="space-form-subtitle">Пространство будет создано отдельно от остальных. Его задачи и настройки можно будет менять после создания.</p>
+                        </div>
+                    </div>
+                    <footer class="space-wizard-footer">
+                        <span class="space-wizard-step-label" id="spaceWizardStepLabel">Шаг 1 из 2</span>
+                        <div class="modal-actions">
+                            <button class="btn btn-ghost" id="spaceWizardBack" type="button" onclick="setSpaceWizardStep(1)" hidden>Назад</button>
+                            <button class="btn btn-primary" id="spaceWizardNext" type="button" onclick="continueSpaceWizard()">Далее <i class="fa-solid fa-arrow-right"></i></button>
+                            <button class="btn btn-primary" id="board-submit" type="button" onclick="submitBoardModal()" hidden>Создать пространство</button>
+                        </div>
+                    </footer>
+                </section>
+                <section class="space-preview" aria-label="Предпросмотр пространства">
+                    <div class="space-preview-window">
+                        <div class="space-preview-banner"></div>
+                        <div class="space-preview-head">
+                            <div class="space-preview-managed" id="spacePreviewManaged">Командное пространство /</div>
+                            <div class="space-preview-name"><span id="spacePreviewName">Название пространства</span> <span class="space-preview-key" id="spacePreviewKey">SPACE</span></div>
+                        </div>
+                        <div class="space-preview-tabs" id="spacePreviewTabs"></div>
+                        <div class="space-preview-board" id="spacePreviewBoard"></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div class="backdrop" id="automationCreateModal" onclick="if (event.target === this) closeModal('automationCreateModal')">
+        <div class="modal small automation-modal">
+            <h3>Создать автоматизацию</h3>
+            <p class="page-sub">Выберите событие и действие для задач в этом пространстве.</p>
+            <div class="field">
+                <label for="automation-trigger-status">Когда задача перейдёт в статус</label>
+                <select id="automation-trigger-status">
+                    <option value="TODO">К выполнению</option>
+                    <option value="IN_PROGRESS">В работе</option>
+                    <option value="IN_REVIEW">На ревью</option>
+                    <option value="DONE">Готово</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="automation-action-type">Выполнить действие</label>
+                <select id="automation-action-type" onchange="updateAutomationActionField()">
+                    <option value="SET_PRIORITY">Изменить приоритет</option>
+                    <option value="ASSIGN_TO_ME">Назначить на меня</option>
+                </select>
+            </div>
+            <div class="field" id="automation-priority-field">
+                <label for="automation-action-priority">Новый приоритет</label>
+                <select id="automation-action-priority">
+                    <option value="LOW">Низкий</option>
+                    <option value="MEDIUM">Средний</option>
+                    <option value="HIGH">Высокий</option>
+                    <option value="HIGHEST">Критический</option>
+                </select>
+            </div>
+            <div class="form-error" id="automation-create-error" role="alert"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" type="button" onclick="closeModal('automationCreateModal')">Отмена</button>
+                <button class="btn btn-primary" type="button" onclick="createAutomationRule()">Сохранить правило</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="backdrop" id="automationManageModal" onclick="if (event.target === this) closeModal('automationManageModal')">
+        <div class="modal">
+            <h3>Управление автоматизациями</h3>
+            <div class="automation-rule-list" id="automationRuleList"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" type="button" onclick="closeModal('automationManageModal')">Закрыть</button>
+                <button class="btn btn-primary" type="button" onclick="closeModal('automationManageModal'); openAutomationCreate()"><i class="fa-solid fa-plus"></i> Создать автоматизацию</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="backdrop" id="automationAuditModal" onclick="if (event.target === this) closeModal('automationAuditModal')">
+        <div class="modal">
+            <h3>Журнал аудита</h3>
+            <div class="automation-audit-list" id="automationAuditList"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" type="button" onclick="closeModal('automationAuditModal')">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Modal: confirm ================= -->
+    <div class="backdrop" id="confirmModal" onclick="if (event.target === this) resolveConfirm(false)">
+        <div class="modal small">
+            <h3 id="cf-title">Подтвердите действие</h3>
+            <p id="cf-text"></p>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="resolveConfirm(false)">Отмена</button>
+                <button class="btn btn-danger" id="cf-ok" onclick="resolveConfirm(true)">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+
+    <script src="/js/app.js"></script>
+</body>
+
+</html>

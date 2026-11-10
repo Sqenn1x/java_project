@@ -1,0 +1,39 @@
+﻿project:
+  scope_path: "."
+  loc: 1949
+  languages: [Java]
+  git: true
+  structure:
+    src/main: "Spring Boot application code and static assets"
+    src/test: "Automated tests"
+  notes: "Single-module Java Spring Boot Jira Lite project; frontend assets are reported concentrated in static/index.html."
+assessment:
+  change_type: upgrade
+  rationale: |
+    In-place structural refactor within the existing Java Spring Boot stack. Scope is repository-wide organization only; user explicitly requires existing behavior and API contracts to remain unchanged.
+  transformations:
+    - fromStack: "Java / Spring Boot"
+      fromStackVersion: "existing project version"
+      toStack: "Java / Spring Boot"
+      toStackVersion: "unchanged"
+  grouping_needed: false
+  deep_planning: false
+progress_sync:
+  run_id: a5b235f8-d88d-460a-a3a8-432dd7edbcda
+  grouping_mode: none
+  execution_mode: all-at-once
+  plan_start_time: "2026-11-10T22:38:59Z"
+  plan_completed_time: "2026-11-10T22:41:38Z"
+  execution_start_time: "2026-11-10T22:42:48Z"
+  execution_completed_time: pending
+  validation_start_time: pending
+  validation_completed_time: pending
+  total_phases: 4
+  completed_phases: 0
+  total_modules: 1
+  completed_modules: 0
+  total_tasks: 6
+  completed_tasks: 0
+  total_commits: 0
+  build_verified: false
+  test_verified: false
